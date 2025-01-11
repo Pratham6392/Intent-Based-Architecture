@@ -4,11 +4,11 @@ from .base import BaseAggregator
 from typing import Dict, Any
 import json
 
-class OneInchAPI(BaseAggregator):
+class UniswapXAPI(BaseAggregator):
     def __init__(self):
-        self.base_url = "https://api.1inch.io/v5.0/1"  # 1 for Ethereum mainnet
+        self.base_url = "https://api.uniswap.org/v1"
         self.headers = {
-            "Authorization": f"Bearer {settings.ONEINCH_API_KEY}",
+            "Origin": "https://app.uniswap.org",
             "Content-Type": "application/json"
         }
     
@@ -25,7 +25,7 @@ class OneInchAPI(BaseAggregator):
             output_token = self._validate_token(output_token)
             amount = self._validate_amount(amount)
             
-            # Convert amount to wei (assuming 18 decimals)
+            # Convert amount to wei
             amount_wei = int(amount * 10**18)
             
             # Get token addresses
@@ -33,29 +33,28 @@ class OneInchAPI(BaseAggregator):
             to_token = self._get_token_address(output_token)
             
             async with aiohttp.ClientSession() as session:
-                # Get quote from 1inch
                 quote_url = f"{self.base_url}/quote"
-                params = {
-                    "fromTokenAddress": from_token,
-                    "toTokenAddress": to_token,
-                    "amount": str(amount_wei)
+                payload = {
+                    "tokenInAddress": from_token,
+                    "tokenOutAddress": to_token,
+                    "amount": str(amount_wei),
+                    "type": "exactIn"
                 }
                 
-                async with session.get(quote_url, headers=self.headers, params=params) as response:
+                async with session.post(quote_url, headers=self.headers, json=payload) as response:
                     if response.status != 200:
                         error_data = await response.text()
-                        raise Exception(f"1inch API error: {error_data}")
+                        raise Exception(f"UniswapX API error: {error_data}")
                     
                     data = await response.json()
                     
-                    # Extract relevant information
                     return {
-                        "price": float(data["toTokenAmount"]) / 10**18,
-                        "slippage": float(data.get("estimatedGas", 0)) / 100,
-                        "gas_estimate": int(data.get("estimatedGas", 0)),
-                        "execution_time": 30  # Estimated execution time in seconds
+                        "price": float(data["quote"]["amount"]) / 10**18,
+                        "slippage": float(data["quote"].get("slippage", 0.5)),
+                        "gas_estimate": int(data["quote"].get("gasEstimate", 45000)),
+                        "execution_time": 25  # Estimated execution time
                     }
                     
         except Exception as e:
-            print(f"1inch API error: {str(e)}")
+            print(f"UniswapX API error: {str(e)}")
             return None

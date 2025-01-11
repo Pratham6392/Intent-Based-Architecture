@@ -4,11 +4,11 @@ from pydantic import BaseModel
 from typing import Optional
 import uvicorn
 
-from aggregators.cowswap import CowSwapAPI
-from aggregators.uniswap import UniswapXAPI
-from aggregators.oneinch import OneInchAPI
-from utils.rateLimiter import RateLimiter
-from utils.quote_comparator import QuoteComparator
+from backend.aggregators.cowswap import CowSwapAPI
+from backend.aggregators.uniswapx import UniswapXAPI
+from backend.aggregators.oneinch import OneInchAPI
+from backend.utils.rateLimiter import RateLimiter
+from backend.utils.quote_comparator import QuoteComparator
 
 app = FastAPI()
 
